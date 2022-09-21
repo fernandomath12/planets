@@ -1,0 +1,180 @@
+---
+title: "Expo"
+output: html_document
+---
+
+-----------------------------Medidas y cálculos para la diversidad alfa
+
+Primero, leamos los datos de abundacia del conteo de generos de R y cargaremos el paquete Vegan.
+```{r}
+options(width=65,digits=4)
+abund_table=read.csv("https://raw.githubusercontent.com/MJardon913/Analisis_de_microbioma_en_R/main/Data/ALSG93A3.5mButyrateGenus.csv",row.names=1,
+check.names=FALSE)
+library(vegan)
+
+```
+
+
+El siguiente código de pocas líneas muestra que la estructura de datos is taxa (en este caso, géneros) por formato de muestra.
+```{r}
+head(abund_table)
+```
+
+
+La tabla de datos debe transformarse en muestras por taxones (géneros) antes de calcular varias diversidades.
+```{r}
+abund_table<-t(abund_table)
+head(abund_table)
+```
+
+
+Aquí se usa la función specnumber() para calcular el número de géneros
+```{r}
+num_genera<-specnumber(abund_table)
+num_genera
+```
+
+
+--------------------------------Índice Chao1
+
+Ahora estimaremos el número de géneros y el índice Chao1 en nuestro conjunto de datos, usando la función estimate()
+```{r}
+index=estimateR(abund_table)
+index
+```
+
+
+La función anterior genera 5 índices, del cual tomamos Chao1 usando el siguiente código en R
+```{r}
+chao1_genus=estimateR(abund_table)[2,]
+chao1_genus
+```
+
+
+
+---------------------------------Índice de Shannon-Wiener
+
+Usamos la función de diversidad en el paquete Vegan para calcular el índice de Shannon-Wiener, para ello tenemos el siguiente código en R:
+```{r}
+shannon_genus<-diversity(abund_table, index = "shannon", MARGIN=1)
+shannon_genus
+```
+
+
+El índice preterminado de la función de diversidad es el índice de Shannon, por lo que index = "shannon" se puede omitir
+```{r}
+shannon_genus<-diversity(abund_table, MARGIN=1)
+shannon_genus
+```
+
+
+Dado que el cálculo del índice de Shannon es relativo a las filas. El argumento MARGIN=1 también se puede omitir
+```{r}
+shannon_genus<-diversity(abund_table)
+shannon_genus
+```
+
+
+Ahora ilustraremos el cálculo por códigos del plan R utilizando la fórmula del índice de diversidad de Shannon-Wiener. Dado que en la fórmula anterior p_i es la proporción de individuos (o abundancia relativa) de la especie i en la comunidad, usamos la función decostand() en el paquete vegano para convertir los datos de conteo en cada muestra en proporciones.
+```{r}
+abund_table_total<-decostand(abund_table, MARGIN=1, method="total")
+```
+
+
+Los aumentos de MARGIN = 1 significan "filas", MARGIN = 2 significan "columnas" de los datos del objeto tipo matriz (en este caso, abund_table); method = “total” significa dividir por el total del margen (MARGIN = 1 también es el valor predeterminado). Aplicando la función decostand se obtuvo la proporción de individuos en las muestras que pertenecen a cada gen. Luego podemos usar la fórmula del índice Shannon-Wiener para calcular el índice como se muestra a continuación.
+```{r}
+abund_table_p_lnp<-abund_table_total*log(abund_table_total)
+#sumamos los valores p_i*ln (p_i) y los multiplicamos por -1
+rowSums(abund_table_p_lnp, na.rm=TRUE)*-1
+```
+En estos dos enfoques se obtienen los mismos resultados.
+
+
+----------------------------------------Índice de Simpson
+
+Podemos usar la función diversity() en el paquete Vegan o la función R simple para calcular de índice de Simpson.
+```{r}
+simp_genus<-diversity(abund_table, "simpson")
+simp_genus
+```
+
+
+Los siguiente códigos de R utilizan la fórmula del índice de Simpson para calcularlo. Los datos de conteo deben convertirse en proporsiones antes de realizar el formulario.
+```{r}
+#Usando decostand para convertir los datos en proporciones
+abund_table_total<-decostand(abund_table, MARGIN=1, method="total")
+#Elevamos al cuadrado
+abund_table_total_p2<-abund_table_total^2
+#Sumamos las filas
+1-rowSums(abund_table_total_p2, na.rm = TRUE)
+```
+
+
+El índice inverso de Simpson se puede calcular usando "invsimpson"
+```{r}
+inv_simp<-diversity(abund_table, "invsimpson")
+inv_simp
+```
+
+
+---------------------------------Índice de Equidad de Pielou
+
+El índice de Pielou se puede calcular utilizando las funciones specnumber() y diversity() basado en su fórmula que presentamos arriba
+```{r}
+S<-specnumber(abund_table)
+H<-diversity(abund_table, "shannon")
+J<-H/log(S)
+J
+```
+
+
+--------------------------------Hacer un dataframe de índices de diversidad
+
+Podemos hacer un dataframe (marco de datos) para la cantidad de géneros usando los siguientes códigos R
+```{r}
+#Hacer un marco de datos de número de géneros
+N<-specnumber(abund_table)
+df_N<-data.frame(sample=names(N), value=N, measure=rep("Number", length(N))) 
+```
+
+
+El siguiente código se usa para crear un dataframe para el índice Chao1
+```{r}
+#Hacer un marco de datos de número de géneros
+CH<-estimateR(abund_table)[2,]
+df_CH<-data.frame(sample=names(N), value=CH, measure=rep("Chao1", length(CH))) 
+```
+
+
+El siguiente código se usa para crear un dataframe para el índice de Shannon
+```{r}
+H<-diversity(abund_table, "shannon")
+df_H<-data.frame(sample=names(H),value=H,measure=rep("Shannon", length(H)))
+```
+
+
+El siguiente código se usa para crear un dataframe para el índice de Simpson
+```{r}
+df_simp<-data.frame(sample=names(simp_genus),value=simp_genus, measure=rep("Simpson",length(simp_genus)))
+```
+
+
+El siguiente código se usa para crear un dataframe para el índice de Pielou
+```{r}
+df_J<-data.frame(sample=names(J),value=J,measure=rep("Pielou", length(J)))
+```
+
+
+Ahora podemos combinar todos los dataframe para usarlos después
+```{r}
+df<-rbind(df_N, df_CH, df_H, df_simp, df_J)
+rownames(df)<-NULL
+df
+```
+
+
+
+
+
+
+

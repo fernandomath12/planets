@@ -1,0 +1,77 @@
+---
+title: "Medidas y cálculos de la diversidad Beta"
+output: html_document
+---
+
+--------------------------------------Medidas y cálculos de la diversidad beta
+
+```{r}
+options(width=65,digits=4)
+abund_table=read.csv("https://raw.githubusercontent.com/MJardon913/Analisis_de_microbioma_en_R/main/Data/ALSG93A3.5mButyrateGenus.csv",row.names=1,
+check.names=FALSE)
+library(vegan)
+```
+
+El siguiente código de pocas líneas muestra que la estructura de datos is taxa (en este caso, géneros) por formato de muestra.
+```{r}
+head(abund_table)
+```
+
+
+La tabla de datos debe transformarse en muestras por taxones (géneros) antes de calcular varias diversidades.
+```{r}
+abund_table<-t(abund_table)
+head(abund_table)
+```
+
+
+La medida de disimilitud de Jaccard se puede calcular usando la función vegdist() en el paquete Vegan
+```{r}
+jaccard<-vegdist(abund_table, "jaccard")
+jaccard
+```
+
+
+----------------------------------Índice de Sorensen
+
+```{r}
+Sorensen<-vegdist(abund_table, binary = TRUE)
+Sorensen
+```
+
+-------------------------------------Coeficiente de distancia (disemejanza): Índice Bray-Curtis
+```{r}
+bray<-vegdist(abund_table, "bray")
+bray
+```
+
+
+
+```{r}
+library(biodiversityR)
+betadiver(help = TRUE)
+ "w" = (b+c)/(2*a+b+c)
+ "-1" = (b+c)/(2*a+b+c)
+ "c" = (b+c)/2
+ "wb" = b+c
+ "r" = 2*b*c/((a+b+c)^2-2*b*c)
+ "I" = log(2*a+b+c) - 2*a*log(2)/(2*a+b+c)-((a+b)*log(a+b) + (a+c)*log(a+c)) / (2*a+b+c)
+ "e" = exp(log(2*a+b+c) - 2*a*log(2)/(2*a+b+c) -((a+b)*log(a+b) + (a+c)*log(a+c)) / (2*a+b+c))-1
+ "t" = (b+c)/(2*a+b+c)
+ "me" = (b+c)/(2*a+b+c)
+ "j" = a/(a+b+c)
+ "sor" = 2*a/(2*a+b+c)
+ "m" = (2*a+b+c)*(b+c)/(a+b+c)
+ "-2" = pmin(b,c)/(pmax(b,c)+a)
+ "co" = (a*c+a*b+2*b*c)/(2*(a+b)*(a+c))
+ "cc" = (b+c)/(a+b+c)
+ "g" = (b+c)/(a+b+c)
+ "-3" = pmin(b,c)/(a+b+c)
+ "l" = (b+c)/2
+ "19" = 2*(b*c+1)/(a+b+c)/(a+b+c-1)
+ "hk" = (b+c)/(2*a+b+c)
+ "rlb" = a/(a+c)
+ "sim" = pmin(b,c)/(pmin(b,c)+a)
+ "gl" = 2*abs(b-c)/(2*a+b+c)
+ "z" = (log(2)-log(2*a+b+c)+log(a+b+c))/log(2)
+```
